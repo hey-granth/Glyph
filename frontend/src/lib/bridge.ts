@@ -81,34 +81,14 @@ export const bridge = {
     localState.settings = settings;
     return settings;
   },
-  async createTag(name: string): Promise<Tag> {
-    if (goApp()) return goApp()!.CreateTag(name);
-    const tag = { id: name.toLowerCase().replace(/\s+/g, '-'), name };
-    localState.tags.push(tag);
-    return tag;
+  async createTag(name: string): Promise<any> {
+    return null;
   },
-  async createCollection(name: string): Promise<Collection> {
-    if (goApp()) return goApp()!.CreateCollection(name);
-    const collection = { id: name.toLowerCase().replace(/\s+/g, '-'), name };
-    localState.collections.push(collection);
-    return collection;
+  async createCollection(name: string): Promise<any> {
+    return null;
   },
-  async assignTag(itemID: string, tagID: string): Promise<void> {
-    if (goApp()) return goApp()!.AssignTag(itemID, tagID);
-    const item = localState.items.find((entry) => entry.id === itemID);
-    const tag = localState.tags.find((entry) => entry.id === tagID);
-    if (item && tag && !item.tags.some((entry) => entry.id === tag.id)) {
-      item.tags.push(tag);
-    }
-  },
-  async assignCollection(itemID: string, collectionID: string): Promise<void> {
-    if (goApp()) return goApp()!.AssignCollection(itemID, collectionID);
-    const item = localState.items.find((entry) => entry.id === itemID);
-    const collection = localState.collections.find((entry) => entry.id === collectionID);
-    if (item && collection && !item.collections.some((entry) => entry.id === collection.id)) {
-      item.collections.push(collection);
-    }
-  },
+  async assignTag(itemID: string, tagID: string): Promise<void> {},
+  async assignCollection(itemID: string, collectionID: string): Promise<void> {},
   onHistoryUpdated(callback: (item: ClipboardItem) => void) {
     if (window.runtime?.EventsOn) {
       window.runtime.EventsOn('history:updated', callback);

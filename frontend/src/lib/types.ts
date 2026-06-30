@@ -42,8 +42,6 @@ export interface ClipboardItem {
   ocrText: string;
   metadata: string;
   preview: Preview;
-  tags: Tag[];
-  collections: Collection[];
   createdAt: string;
   updatedAt: string;
   lastCopiedAt: string;
@@ -65,8 +63,6 @@ export interface Settings {
 
 export interface BootstrapPayload {
   items: ClipboardItem[];
-  tags: Tag[];
-  collections: Collection[];
   settings: Settings;
 }
 

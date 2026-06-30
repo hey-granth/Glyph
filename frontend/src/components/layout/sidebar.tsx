@@ -1,99 +1,114 @@
-import { Archive, ImageIcon, Link2, ScanSearch, Settings2, Sparkles, Tag } from 'lucide-react';
-import type { ClipboardItemType, Collection, Tag as ItemTag } from '../../lib/types';
+import { Archive, ImageIcon, Link2, ScanSearch, Settings2, Sparkles, Layers, Braces } from 'lucide-react';
+import type { ClipboardItemType } from '../../lib/types';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
+import { cn } from '../../lib/utils';
+import { Tooltip } from '../ui/tooltip';
+import { ShortcutBadge } from '../ui/shortcut-badge';
 
-const typeFilters: Array<{ label: string; type: ClipboardItemType; icon: typeof Archive }> = [
-  { label: 'Text', type: 'text', icon: Archive },
-  { label: 'Markdown', type: 'markdown', icon: Sparkles },
-  { label: 'JSON', type: 'json', icon: ScanSearch },
-  { label: 'Links', type: 'url', icon: Link2 },
-  { label: 'Images', type: 'image', icon: ImageIcon },
-];
+// ─── Filter Definitions ───────────────────────────────────────────────────────
 
-interface SidebarProps {
-  activeTypes: ClipboardItemType[];
-  setActiveTypes: (types: ClipboardItemType[]) => void;
-  tags: ItemTag[];
-  collections: Collection[];
-  onOpenSettings: () => void;
+interface FilterDef {
+  label: string;
+  type: ClipboardItemType | 'all';
+  icon: React.ComponentType<{ className?: string }>;
+  shortcut: string;
 }
 
-export function Sidebar(props: SidebarProps) {
-  const toggleType = (type: ClipboardItemType) => {
-    if (props.activeTypes.includes(type)) {
-      props.setActiveTypes(props.activeTypes.filter((entry) => entry !== type));
-      return;
+const FILTERS: FilterDef[] = [
+  { label: 'All', type: 'all', icon: Layers, shortcut: '⌃1' },
+  { label: 'Text', type: 'text', icon: Archive, shortcut: '⌃2' },
+  { label: 'Markdown', type: 'markdown', icon: Sparkles, shortcut: '⌃3' },
+  { label: 'JSON', type: 'json', icon: Braces, shortcut: '⌃4' },
+  { label: 'Links', type: 'url', icon: Link2, shortcut: '⌃5' },
+  { label: 'Images', type: 'image', icon: ImageIcon, shortcut: '⌃6' },
+];
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+
+export function Sidebar() {
+  const { activeTypes, setActiveTypes, setSettingsOpen } = useWorkspace();
+
+  const handleSelect = (type: ClipboardItemType | 'all') => {
+    if (type === 'all') {
+      setActiveTypes([]);
+    } else {
+      setActiveTypes([type]);
     }
-    props.setActiveTypes([...props.activeTypes, type]);
   };
 
   return (
-    <aside className="flex h-full w-[270px] shrink-0 flex-col rounded-[28px] border border-white/15 bg-white/10 p-5 shadow-glass backdrop-blur-2xl">
-      <div className="mb-8">
-        <p className="font-display text-3xl text-mist">Glyph</p>
-        <p className="mt-2 text-sm text-mist/65">
-          Local clipboard memory with instant search, OCR, and quiet privacy controls.
-        </p>
+    <aside
+      className="flex h-full w-[180px] shrink-0 flex-col border-r border-white/[0.07] bg-[#0d0d0d]"
+      aria-label="Navigation"
+      role="navigation"
+    >
+      {/* App identity */}
+      <div className="flex h-12 items-center px-4">
+        <span className="text-[13px] font-semibold tracking-tight text-mist/90">
+          Glyph
+        </span>
       </div>
 
-      <div className="space-y-2">
-        <p className="px-1 text-xs uppercase tracking-[0.28em] text-mist/40">Types</p>
-        {typeFilters.map(({ label, type, icon: Icon }) => {
-          const active = props.activeTypes.includes(type);
+      <div className="mx-3 mb-2 h-px bg-white/[0.06]" />
+
+      {/* Type filters */}
+      <div className="flex flex-1 flex-col gap-0.5 px-2 pt-1">
+        <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-mist/30">
+          Filter
+        </p>
+        {FILTERS.map(({ label, type, icon: Icon, shortcut }) => {
+          const active = type === 'all' ? activeTypes.length === 0 : activeTypes.includes(type);
           return (
-            <button
+            <Tooltip
               key={type}
-              type="button"
-              onClick={() => toggleType(type)}
-              className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition ${
-                active
-                  ? 'bg-mint/20 text-mist shadow-lift'
-                  : 'bg-white/[0.03] text-mist/65 hover:bg-white/[0.08] hover:text-mist'
-              }`}
+              content={label}
+              shortcut={[shortcut]}
+              side="right"
             >
-              <span className="flex items-center gap-3">
-                <Icon className="h-4 w-4" />
+              <button
+                type="button"
+                onClick={() => handleSelect(type)}
+                aria-pressed={active}
+                aria-label={`Filter: ${label}`}
+                className={cn(
+                  'relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left text-[13px] font-medium transition-colors',
+                  active
+                    ? 'text-mist'
+                    : 'text-mist/50 hover:bg-white/5 hover:text-mist/80'
+                )}
+              >
+                {/* Active left-bar indicator */}
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-mint" />
+                )}
+                <Icon
+                  className={cn(
+                    'h-[15px] w-[15px] shrink-0 transition-colors',
+                    active ? 'text-mint' : 'text-mist/40'
+                  )}
+                />
                 {label}
-              </span>
-            </button>
+              </button>
+            </Tooltip>
           );
         })}
       </div>
 
-      <div className="mt-8 space-y-2">
-        <p className="px-1 text-xs uppercase tracking-[0.28em] text-mist/40">Collections</p>
-        {props.collections.length ? (
-          props.collections.map((collection) => (
-            <div key={collection.id} className="rounded-2xl bg-white/[0.04] px-4 py-3 text-sm text-mist/75">
-              {collection.name}
-            </div>
-          ))
-        ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 px-4 py-3 text-sm text-mist/45">
-            No collections yet
-          </div>
-        )}
+      {/* Settings */}
+      <div className="mx-3 mb-2 mt-2 h-px bg-white/[0.06]" />
+      <div className="px-2 pb-3">
+        <Tooltip content="Settings" shortcut={['⌃', ',']} side="right">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Open Settings"
+            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-left text-[13px] font-medium text-mist/50 transition-colors hover:bg-white/5 hover:text-mist/80"
+          >
+            <Settings2 className="h-[15px] w-[15px] shrink-0 text-mist/40" />
+            Settings
+          </button>
+        </Tooltip>
       </div>
-
-      <div className="mt-8 space-y-2">
-        <p className="px-1 text-xs uppercase tracking-[0.28em] text-mist/40">Tags</p>
-        <div className="flex flex-wrap gap-2">
-          {props.tags.map((tag) => (
-            <span key={tag.id} className="inline-flex items-center gap-2 rounded-full bg-white/[0.08] px-3 py-1 text-xs text-mist/80">
-              <Tag className="h-3.5 w-3.5" />
-              {tag.name}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={props.onOpenSettings}
-        className="mt-auto flex items-center gap-3 rounded-2xl bg-white/[0.06] px-4 py-3 text-sm text-mist transition hover:bg-white/[0.12]"
-      >
-        <Settings2 className="h-4 w-4" />
-        Settings
-      </button>
     </aside>
   );
 }

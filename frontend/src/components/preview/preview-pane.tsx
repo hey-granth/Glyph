@@ -1,158 +1,298 @@
+import * as React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Copy, ExternalLink, FileJson2, FolderOpen, Heart, ScanText, Trash2, Type } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  FileJson2,
+  FolderOpen,
+  Heart,
+  ScanText,
+  Trash2,
+  Type,
+  MoreHorizontal,
+} from 'lucide-react';
 import type { ClipboardItem } from '../../lib/types';
+import { cn } from '../../lib/utils';
+import { Tooltip } from '../ui/tooltip';
 
-function actionsFor(item: ClipboardItem): Array<{ id: string; label: string; icon: typeof Copy }> {
+// ─── Actions per type ─────────────────────────────────────────────────────────
+
+function actionsFor(item: ClipboardItem): Array<{
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  primary?: boolean;
+}> {
   switch (item.type) {
     case 'json':
       return [
-        { id: 'copy_again', label: 'Copy Again', icon: Copy },
+        { id: 'copy_again', label: 'Copy', icon: Copy, primary: true },
         { id: 'copy_plain', label: 'Copy as Plain Text', icon: Type },
       ];
     case 'url':
       return [
+        { id: 'copy_again', label: 'Copy URL', icon: Copy, primary: true },
         { id: 'open_url', label: 'Open Link', icon: ExternalLink },
-        { id: 'copy_again', label: 'Copy URL', icon: Copy },
       ];
     case 'image':
-      return [{ id: 'copy_again', label: 'Copy Image Path', icon: Copy }];
+      return [
+        { id: 'copy_again', label: 'Copy Image', icon: Copy, primary: true },
+      ];
     case 'file':
     case 'folder':
-      return [{ id: 'open_file', label: 'Open', icon: FolderOpen }];
+      return [
+        { id: 'copy_again', label: 'Copy Path', icon: Copy, primary: true },
+        { id: 'open_file', label: 'Open in Finder', icon: FolderOpen },
+      ];
     default:
       return [
-        { id: 'copy_again', label: 'Copy Again', icon: Copy },
-        { id: 'uppercase', label: 'Uppercase', icon: Type },
-        { id: 'lowercase', label: 'Lowercase', icon: Type },
+        { id: 'copy_again', label: 'Copy', icon: Copy, primary: true },
+        { id: 'copy_plain', label: 'Copy as Plain Text', icon: Type },
+        { id: 'uppercase', label: 'To Uppercase', icon: Type },
+        { id: 'lowercase', label: 'To Lowercase', icon: Type },
       ];
   }
 }
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface PreviewPaneProps {
   item: ClipboardItem | null;
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
   onAction: (action: string) => void;
+  privateMode: boolean;
 }
 
-export function PreviewPane(props: PreviewPaneProps) {
+// ─── Preview Pane ─────────────────────────────────────────────────────────────
+
+export function PreviewPane({
+  item,
+  onToggleFavorite,
+  onDelete,
+  onAction,
+  privateMode,
+}: PreviewPaneProps) {
+  const [metadataOpen, setMetadataOpen] = React.useState(false);
+
+  // Reset metadata collapse when item changes
+  React.useEffect(() => {
+    setMetadataOpen(false);
+  }, [item?.id]);
+
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[32px] border border-white/15 bg-white/[0.08] shadow-glass backdrop-blur-2xl">
+    <div className="flex h-full flex-col overflow-hidden bg-[#0a0a0a]">
       <AnimatePresence mode="wait">
-        {props.item ? (
+        {item ? (
           <motion.div
-            key={props.item.id}
-            initial={{ opacity: 0, scale: 0.98, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 0.98, filter: 'blur(8px)' }}
-            transition={{ type: 'spring', stiffness: 140, damping: 20 }}
+            key={item.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
             className="flex h-full flex-col"
           >
-            <div className="border-b border-white/10 px-7 py-6">
-              <div className="flex items-start justify-between gap-5">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-mist/40">{props.item.type}</p>
-                  <h2 className="mt-3 max-w-3xl font-display text-4xl leading-tight text-mist">
-                    {props.item.title}
-                  </h2>
-                </div>
-                <div className="flex items-center gap-2">
+            {/* ── Toolbar header ────────────────────────────────────────── */}
+            <div className="flex h-12 shrink-0 items-center gap-2 border-b border-white/[0.07] px-4">
+              {/* Type badge */}
+              <span className="inline-flex items-center rounded bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-mist/50">
+                {item.type}
+              </span>
+
+              {/* Title */}
+              <h2 className="flex-1 truncate text-[13px] font-medium text-mist/80">
+                {item.title}
+              </h2>
+
+              {/* Primary action buttons */}
+              <div className="flex items-center gap-1">
+                {actionsFor(item)
+                  .filter((a) => a.primary)
+                  .map((action) => {
+                    const Icon = action.icon;
+                    return (
+                      <Tooltip key={action.id} content={action.label} side="bottom">
+                        <button
+                          type="button"
+                          onClick={() => onAction(action.id)}
+                          aria-label={action.label}
+                          className="flex h-7 w-7 items-center justify-center rounded-md bg-mint/15 text-mint transition-colors hover:bg-mint/25"
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                        </button>
+                      </Tooltip>
+                    );
+                  })}
+
+                <Tooltip
+                  content={item.favorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                  shortcut={['⌃P']}
+                  side="bottom"
+                >
                   <button
                     type="button"
-                    onClick={() => props.onToggleFavorite(props.item!.id)}
-                    className={`rounded-2xl px-4 py-3 text-sm transition ${
-                      props.item.favorite ? 'bg-amber/15 text-amber' : 'bg-white/[0.06] text-mist/75 hover:bg-white/[0.12]'
-                    }`}
+                    onClick={() => onToggleFavorite(item.id)}
+                    aria-label={item.favorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                    aria-pressed={item.favorite}
+                    className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                      item.favorite
+                        ? 'bg-amber/15 text-amber'
+                        : 'text-mist/40 hover:bg-white/8 hover:text-mist/70'
+                    )}
                   >
-                    <span className="inline-flex items-center gap-2">
-                      <Heart className={`h-4 w-4 ${props.item.favorite ? 'fill-current' : ''}`} />
-                      Favorite
-                    </span>
+                    <Heart className={cn('h-3.5 w-3.5', item.favorite && 'fill-current')} />
                   </button>
+                </Tooltip>
+
+                <Tooltip content="Delete" shortcut={['Del']} side="bottom">
                   <button
                     type="button"
-                    onClick={() => props.onDelete(props.item!.id)}
-                    className="rounded-2xl bg-rose/15 px-4 py-3 text-sm text-rose transition hover:bg-rose/20"
+                    onClick={() => onDelete(item.id)}
+                    aria-label="Delete item"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-mist/40 transition-colors hover:bg-rose/10 hover:text-rose"
                   >
-                    <span className="inline-flex items-center gap-2">
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </span>
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
-                </div>
+                </Tooltip>
               </div>
             </div>
 
-            <div className="grid flex-1 grid-cols-[minmax(0,1fr)_280px] gap-0">
-              <div className="overflow-y-auto px-7 py-6">
-                {props.item.preview.kind === 'image' && props.item.storagePath ? (
-                  <img
-                    src={props.item.storagePath}
-                    alt={props.item.title}
-                    className="max-h-[420px] rounded-[28px] border border-white/10 object-contain shadow-lift"
-                  />
+            {/* ── Content ───────────────────────────────────────────────── */}
+            <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+              {/* Secondary actions row (non-primary) */}
+              {actionsFor(item).filter((a) => !a.primary).length > 0 && (
+                <div className="flex items-center gap-1 border-b border-white/[0.05] px-4 py-2">
+                  <span className="mr-1 text-[10px] font-semibold uppercase tracking-widest text-mist/25">
+                    Actions
+                  </span>
+                  {actionsFor(item)
+                    .filter((a) => !a.primary)
+                    .map((action) => {
+                      const Icon = action.icon;
+                      return (
+                        <button
+                          key={action.id}
+                          type="button"
+                          onClick={() => onAction(action.id)}
+                          className="flex items-center gap-1.5 rounded-md border border-white/[0.07] px-2.5 py-1 text-[12px] text-mist/60 transition-colors hover:border-white/15 hover:text-mist/80"
+                        >
+                          <Icon className="h-3 w-3" />
+                          {action.label}
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+
+              {/* Main preview area */}
+              <div className="flex-1 overflow-y-auto">
+                {item.preview.kind === 'image' && item.storagePath ? (
+                  <div className="flex items-center justify-center p-8">
+                    <img
+                      src={item.storagePath}
+                      alt={item.title}
+                      className={cn(
+                        'max-h-[480px] max-w-full rounded-lg border border-white/10 object-contain shadow-lg',
+                        privateMode && 'blur-xl'
+                      )}
+                    />
+                  </div>
                 ) : (
-                  <div className="prose prose-invert prose-pre:rounded-[24px] prose-pre:border prose-pre:border-white/10 prose-pre:bg-black/20 max-w-none">
-                    <pre className="font-mono whitespace-pre-wrap break-words text-sm text-mist/90">
-                      {props.item.preview.body || props.item.textContent || props.item.filePath}
+                  <div className="p-4">
+                    <pre
+                      className={cn(
+                        'whitespace-pre-wrap break-words font-mono text-[13px] leading-relaxed text-mist/85',
+                        privateMode && 'select-none blur-md'
+                      )}
+                    >
+                      {item.preview.body || item.textContent || item.filePath}
                     </pre>
                   </div>
                 )}
 
-                {props.item.ocrText ? (
-                  <div className="mt-6 rounded-[26px] border border-white/10 bg-black/15 p-5">
-                    <p className="mb-3 inline-flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-mint/70">
-                      <ScanText className="h-4 w-4" />
-                      OCR Text
+                {item.ocrText && (
+                  <div className="mx-4 mb-4 rounded-lg border border-white/[0.07] bg-white/[0.02] p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <ScanText className="h-3.5 w-3.5 text-mint/60" />
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-mist/40">
+                        OCR Text
+                      </span>
+                    </div>
+                    <p className="text-[13px] leading-relaxed text-mist/70 whitespace-pre-wrap">
+                      {item.ocrText}
                     </p>
-                    <p className="text-sm leading-7 text-mist/70">{props.item.ocrText}</p>
                   </div>
-                ) : null}
+                )}
               </div>
 
-              <div className="border-l border-white/10 bg-black/10 p-5">
-                <p className="text-xs uppercase tracking-[0.28em] text-mist/40">Quick Actions</p>
-                <div className="mt-4 space-y-2">
-                  {actionsFor(props.item).map((action) => {
-                    const Icon = action.icon;
-                    return (
-                      <button
-                        key={action.id}
-                        type="button"
-                        onClick={() => props.onAction(action.id)}
-                        className="flex w-full items-center gap-3 rounded-[22px] bg-white/[0.06] px-4 py-3 text-left text-sm text-mist transition hover:bg-white/[0.12]"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {action.label}
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* ── Metadata drawer ────────────────────────────────────── */}
+              <div className="shrink-0 border-t border-white/[0.06]">
+                <button
+                  type="button"
+                  onClick={() => setMetadataOpen((v) => !v)}
+                  aria-expanded={metadataOpen}
+                  className="flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors hover:bg-white/[0.02]"
+                >
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-mist/35">
+                    Metadata
+                  </span>
+                  {metadataOpen ? (
+                    <ChevronDown className="h-3.5 w-3.5 text-mist/30" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 text-mist/30" />
+                  )}
+                </button>
 
-                <div className="mt-6 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
-                  <p className="text-xs uppercase tracking-[0.28em] text-mist/40">Metadata</p>
-                  <div className="mt-4 space-y-3 text-sm text-mist/70">
-                    <div>
-                      <p className="text-mist/40">Copied</p>
-                      <p>{new Date(props.item.lastCopiedAt).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-mist/40">Source</p>
-                      <p>{props.item.sourceApp || 'Unknown app'}</p>
-                    </div>
-                    <div>
-                      <p className="text-mist/40">Copy count</p>
-                      <p>{props.item.copyCount}</p>
-                    </div>
-                    <div>
-                      <p className="text-mist/40">Preview</p>
-                      <p className="inline-flex items-center gap-2">
-                        <FileJson2 className="h-4 w-4" />
-                        {props.item.preview.kind}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <AnimatePresence>
+                  {metadataOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.18 }}
+                      className="overflow-hidden"
+                    >
+                      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 pb-4 pt-1">
+                        <div>
+                          <dt className="text-[10px] text-mist/35">Last Copied</dt>
+                          <dd className="mt-0.5 text-[12px] text-mist/70">
+                            {new Date(item.lastCopiedAt).toLocaleString()}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[10px] text-mist/35">Source</dt>
+                          <dd className="mt-0.5 text-[12px] text-mist/70">
+                            {item.sourceApp || 'Unknown'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[10px] text-mist/35">Times Copied</dt>
+                          <dd className="mt-0.5 text-[12px] tabular-nums text-mist/70">
+                            {item.copyCount}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-[10px] text-mist/35">Format</dt>
+                          <dd className="mt-0.5 flex items-center gap-1 text-[12px] text-mist/70">
+                            <FileJson2 className="h-3 w-3" />
+                            {item.preview.kind}
+                          </dd>
+                        </div>
+                        {item.filePath && (
+                          <div className="col-span-2">
+                            <dt className="text-[10px] text-mist/35">Path</dt>
+                            <dd className="mt-0.5 break-all font-mono text-[11px] text-mist/60">
+                              {item.filePath}
+                            </dd>
+                          </div>
+                        )}
+                      </dl>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>
@@ -162,14 +302,15 @@ export function PreviewPane(props: PreviewPaneProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex h-full items-center justify-center px-10 text-center"
+            className="flex h-full flex-col items-center justify-center gap-2 text-center"
           >
-            <div>
-              <p className="font-display text-4xl text-mist">Clipboard, remembered.</p>
-              <p className="mt-3 text-sm text-mist/55">
-                Copy something new or refine your search to reveal a saved item.
-              </p>
+            <div className="mb-1 rounded-full border border-white/[0.07] p-4">
+              <Copy className="h-6 w-6 text-mist/20" />
             </div>
+            <p className="text-[13px] font-medium text-mist/40">Nothing selected</p>
+            <p className="text-[12px] text-mist/25">
+              Select an item from the list to preview
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
