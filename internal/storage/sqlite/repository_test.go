@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/granthio/glyph/internal/domain"
+	"github.com/hey-granth/Glyph/internal/domain"
 )
 
 func TestRepositoryUpsertAndSearch(t *testing.T) {

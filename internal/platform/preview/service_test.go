@@ -3,7 +3,7 @@ package preview
 import (
 	"testing"
 
-	"github.com/granthio/glyph/internal/domain"
+	"github.com/hey-granth/Glyph/internal/domain"
 )
 
 func TestDetectType(t *testing.T) {

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Search,
@@ -13,19 +14,9 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
+import { useCommandRegistry } from '../../lib/command-registry';
+import type { Command } from '../../lib/command-registry';
 import { cn } from '../../lib/utils';
-
-// ─── Command Registry ─────────────────────────────────────────────────────────
-
-interface Command {
-  id: string;
-  label: string;
-  description?: string;
-  shortcut?: string[];
-  icon: React.ComponentType<{ className?: string }>;
-  category: string;
-  action: () => void;
-}
 
 interface CommandPaletteProps {
   open: boolean;
@@ -41,117 +32,18 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
 
   // ─── Commands ─────────────────────────────────────────────────────────────
 
-  const commands = React.useMemo<Command[]>(() => [
-    {
-      id: 'open-settings',
-      label: 'Open Settings',
-      description: 'Manage preferences',
-      shortcut: ['Ctrl', ','],
-      icon: Settings2,
-      category: 'Application',
+  const baseCommands = useCommandRegistry(workspace, onOpenShortcuts);
+  
+  // Wrap actions to also close the palette
+  const commands = React.useMemo(() => {
+    return baseCommands.map(cmd => ({
+      ...cmd,
       action: () => {
-        workspace.setSettingsOpen(true);
+        cmd.action();
         onClose();
-      },
-    },
-    {
-      id: 'keyboard-shortcuts',
-      label: 'Keyboard Shortcuts',
-      description: 'View and edit shortcuts',
-      shortcut: ['?'],
-      icon: Keyboard,
-      category: 'Application',
-      action: () => {
-        onOpenShortcuts();
-        onClose();
-      },
-    },
-    {
-      id: 'clear-history',
-      label: 'Clear History',
-      description: 'Delete all clipboard items',
-      icon: Trash2,
-      category: 'History',
-      action: () => {
-        onClose();
-        workspace.showConfirm({
-          title: 'Clear all history?',
-          description: 'This will permanently delete all clipboard items. This cannot be undone.',
-          confirmLabel: 'Clear All',
-          onConfirm: () => {
-            void workspace.clearHistory();
-            workspace.dismissConfirm();
-          },
-        });
-      },
-    },
-    {
-      id: 'toggle-pause',
-      label: workspace.boot.settings.pauseHistory ? 'Resume Recording' : 'Pause Recording',
-      description: workspace.boot.settings.pauseHistory
-        ? 'Start capturing clipboard events again'
-        : 'Temporarily stop capturing clipboard events',
-      icon: workspace.boot.settings.pauseHistory ? PlayCircle : PauseCircle,
-      category: 'History',
-      action: () => {
-        void workspace.updateSettings({
-          ...workspace.boot.settings,
-          pauseHistory: !workspace.boot.settings.pauseHistory,
-        });
-        onClose();
-      },
-    },
-    {
-      id: 'toggle-ocr',
-      label: workspace.boot.settings.ocrEnabled ? 'Disable OCR' : 'Enable OCR',
-      description: 'Extract text from clipboard images',
-      icon: ScanText,
-      category: 'Features',
-      action: () => {
-        void workspace.updateSettings({
-          ...workspace.boot.settings,
-          ocrEnabled: !workspace.boot.settings.ocrEnabled,
-        });
-        onClose();
-      },
-    },
-    {
-      id: 'toggle-private',
-      label: workspace.boot.settings.privateMode ? 'Disable Private Mode' : 'Enable Private Mode',
-      description: 'Hide content until hovered',
-      icon: workspace.boot.settings.privateMode ? Eye : EyeOff,
-      category: 'Privacy',
-      action: () => {
-        void workspace.updateSettings({
-          ...workspace.boot.settings,
-          privateMode: !workspace.boot.settings.privateMode,
-        });
-        onClose();
-      },
-    },
-    {
-      id: 'filter-all',
-      label: 'Show All Items',
-      shortcut: ['Ctrl', '1'],
-      icon: ClipboardList,
-      category: 'Filter',
-      action: () => {
-        workspace.setActiveTypes([]);
-        onClose();
-      },
-    },
-    {
-      id: 'filter-images',
-      label: 'Filter: Images',
-      shortcut: ['Ctrl', '6'],
-      icon: ClipboardList,
-      category: 'Filter',
-      action: () => {
-        workspace.setActiveTypes(['image']);
-        onClose();
-      },
-    },
-  ], [workspace, onClose, onOpenShortcuts]);
+      }
+    }));
+  }, [baseCommands, onClose]);
 
   // ─── Filtered commands ────────────────────────────────────────────────────
 
@@ -212,7 +104,7 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
 
   let flatIndex = -1;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -300,7 +192,7 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
                           </div>
                           {cmd.shortcut && (
                             <div className="flex items-center gap-0.5">
-                              {cmd.shortcut.map((k, i) => (
+                              {cmd.shortcut.map((k: string, i: number) => (
                                 <kbd
                                   key={i}
                                   className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-mist/40"
@@ -333,6 +225,7 @@ export function CommandPalette({ open, onClose, onOpenShortcuts }: CommandPalett
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

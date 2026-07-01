@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { ShortcutBadge } from '../ui/shortcut-badge';
@@ -90,7 +91,7 @@ export function KeyboardShortcutsOverlay({ open, onClose }: ShortcutOverlayProps
     return () => window.removeEventListener('keydown', handle);
   }, [open, onClose]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -166,6 +167,7 @@ export function KeyboardShortcutsOverlay({ open, onClose }: ShortcutOverlayProps
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

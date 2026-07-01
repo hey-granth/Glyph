@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useWorkspace } from '../contexts/WorkspaceContext';
+import { bridge } from '../lib/bridge';
 
 /**
  * useKeyboardShortcuts — Global keyboard engine for Glyph.
@@ -56,6 +57,27 @@ export function useKeyboardShortcuts(
         return;
       }
 
+      // ── Extended navigation ───────────────────────────────────────────────
+      if (['PageUp', 'PageDown', 'Home', 'End'].includes(e.key) && !inTextInput && !inSelect) {
+        e.preventDefault();
+        const items = workspace.items;
+        if (items.length === 0) return;
+        const currentIdx = items.findIndex((i) => i.id === workspace.selectedID);
+        let nextIdx = currentIdx;
+
+        if (e.key === 'Home') nextIdx = 0;
+        if (e.key === 'End') nextIdx = items.length - 1;
+        if (e.key === 'PageUp') nextIdx = Math.max(0, currentIdx - 10);
+        if (e.key === 'PageDown') nextIdx = Math.min(items.length - 1, currentIdx + 10);
+
+        workspace.setSelectedID(items[nextIdx].id);
+        setTimeout(() => {
+          const el = document.querySelector('[data-selected="true"]');
+          el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }, 0);
+        return;
+      }
+
       // ── Enter: copy selected item (from search or anywhere non-input) ──
       if (e.key === 'Enter' && (inSearch || !inAnyInput) && !e.ctrlKey && !e.metaKey) {
         if (workspace.selectedItem) {
@@ -79,17 +101,33 @@ export function useKeyboardShortcuts(
           workspace.setSettingsOpen(false);
           return;
         }
+        // Confirm dialog
+        if (workspace.confirm.open) {
+          e.preventDefault();
+          workspace.dismissConfirm();
+          return;
+        }
         // Shortcut overlay
-        setShortcutsOpen(false);
+        const overlays = document.querySelectorAll('[aria-label="Keyboard Shortcuts"]');
+        if (overlays.length > 0) {
+          // If overlay handles its own escape, we just let it bubble, but we check if it's open
+          // Actually, overlay has its own escape listener. Let's rely on it or hide it here.
+          setShortcutsOpen(false);
+          return;
+        }
         // Clear search if in search field and query is non-empty
         if (inSearch) {
           if (workspace.query) {
             e.preventDefault();
             workspace.setQuery('');
+            return;
           } else {
             (target as HTMLInputElement).blur();
           }
         }
+        // Final fallback: hide window
+        e.preventDefault();
+        void bridge.hideWindow();
         return;
       }
 
@@ -146,7 +184,8 @@ export function useKeyboardShortcuts(
 
           // Ctrl+C — Copy selected (only when not in input, avoid blocking native copy)
           case 'c':
-            if (!inAnyInput && workspace.selectedID) {
+            const inPreviewPane = target.closest('#preview-pane') !== null;
+            if (!inAnyInput && !inPreviewPane && workspace.selectedID) {
               e.preventDefault();
               if (e.shiftKey) {
                 void workspace.executeAction('copy_plain');

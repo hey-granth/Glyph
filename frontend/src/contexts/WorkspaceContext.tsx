@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { bridge } from '../lib/bridge';
 import { storage, STORAGE_KEYS } from '../lib/storage';
+import { applyTheme } from '../lib/theme';
 import type { BootstrapPayload, ClipboardItem, ClipboardItemType, Settings } from '../lib/types';
 
 // ─── Toast System ────────────────────────────────────────────────────────────
@@ -136,6 +137,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void bridge.bootstrap().then((payload) => {
       setBoot(payload);
+      applyTheme(payload.settings);
       setItems(payload.items);
       const savedID = storage.get<string>(STORAGE_KEYS.SELECTED_ID, '');
       const firstID = payload.items[0]?.id ?? '';
@@ -148,6 +150,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       startTransition(() => {
         setItems((current) => [item, ...current.filter((e) => e.id !== item.id)]);
         setSelectedIDState((current) => current || item.id);
+      });
+    });
+
+    bridge.onSettingsUpdated((settings) => {
+      startTransition(() => {
+        setBoot((current) => ({ ...current, settings }));
+        applyTheme(settings);
       });
     });
   }, []);
@@ -273,6 +282,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const updateSettings = useCallback(async (nextSettings: Settings) => {
     const saved = await bridge.updateSettings(nextSettings);
     setBoot((current) => ({ ...current, settings: saved }));
+    applyTheme(saved);
     showToast('Settings saved');
   }, [showToast]);
 

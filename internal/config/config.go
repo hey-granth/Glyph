@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/granthio/glyph/internal/domain"
+	"github.com/hey-granth/Glyph/internal/domain"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -32,6 +32,12 @@ type Config struct {
 	History struct {
 		Limit int `toml:"limit"`
 	} `toml:"history"`
+	Window struct {
+		Width  int `toml:"width"`
+		Height int `toml:"height"`
+		X      int `toml:"x"`
+		Y      int `toml:"y"`
+	} `toml:"window"`
 }
 
 func Load() (*Config, error) {
@@ -81,6 +87,8 @@ func defaultConfig(root string) *Config {
 	cfg.UI.Theme = "graphite"
 	cfg.UI.GlobalShortcut = "Ctrl+Shift+Space"
 	cfg.History.Limit = 0
+	cfg.Window.Width = 1360
+	cfg.Window.Height = 860
 	return cfg
 }
 

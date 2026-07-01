@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/granthio/glyph/internal/domain"
+	"github.com/hey-granth/Glyph/internal/domain"
 )
 
 type Repository struct {
@@ -167,6 +167,23 @@ func (r *Repository) DeleteItem(ctx context.Context, id string) error {
 
 func (r *Repository) ClearHistory(ctx context.Context) error {
 	_, err := r.db.ExecContext(ctx, `DELETE FROM items`)
+	return err
+}
+
+// TrimHistory deletes the oldest items so that only `limit` rows remain.
+// Does nothing if limit <= 0.
+func (r *Repository) TrimHistory(ctx context.Context, limit int) error {
+	if limit <= 0 {
+		return nil
+	}
+	_, err := r.db.ExecContext(ctx, `
+		DELETE FROM items
+		WHERE id NOT IN (
+			SELECT id FROM items
+			ORDER BY last_copied_at DESC
+			LIMIT ?
+		)
+	`, limit)
 	return err
 }
 

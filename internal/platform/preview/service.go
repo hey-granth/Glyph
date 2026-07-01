@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/granthio/glyph/internal/domain"
+	"github.com/hey-granth/Glyph/internal/domain"
 )
 
 type Service struct{}

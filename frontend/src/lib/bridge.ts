@@ -14,6 +14,8 @@ type GoMain = {
   CreateCollection: (name: string) => Promise<Collection>;
   AssignTag: (itemID: string, tagID: string) => Promise<void>;
   AssignCollection: (itemID: string, collectionID: string) => Promise<void>;
+  HideWindow: () => Promise<void>;
+  OpenDirectoryDialog: () => Promise<string>;
 };
 
 declare global {
@@ -24,7 +26,7 @@ declare global {
       };
     };
     runtime?: {
-      EventsOn?: (eventName: string, callback: (payload: ClipboardItem) => void) => void;
+      EventsOn?: (eventName: string, callback: (payload: any) => void) => void;
     };
   }
 }
@@ -89,9 +91,22 @@ export const bridge = {
   },
   async assignTag(itemID: string, tagID: string): Promise<void> {},
   async assignCollection(itemID: string, collectionID: string): Promise<void> {},
+  async hideWindow(): Promise<void> {
+    if (goApp()) return goApp()!.HideWindow();
+    console.log('[Mock] HideWindow called');
+  },
+  async openDirectoryDialog(): Promise<string> {
+    if (goApp()) return goApp()!.OpenDirectoryDialog();
+    return '/mock/path/selected';
+  },
   onHistoryUpdated(callback: (item: ClipboardItem) => void) {
     if (window.runtime?.EventsOn) {
       window.runtime.EventsOn('history:updated', callback);
+    }
+  },
+  onSettingsUpdated(callback: (settings: Settings) => void) {
+    if (window.runtime?.EventsOn) {
+      window.runtime.EventsOn('settings:updated', callback);
     }
   },
 };

@@ -65,12 +65,14 @@ interface HistoryRowProps {
   item: ClipboardItem;
   selected: boolean;
   onSelect: () => void;
+  onDoubleClick: () => void;
   onContextAction: (id: string, action: string) => void;
   privateMode: boolean;
 }
 
-function HistoryRow({ item, selected, onSelect, onContextAction, privateMode }: HistoryRowProps) {
+function HistoryRow({ item, selected, onSelect, onDoubleClick, onContextAction, privateMode }: HistoryRowProps) {
   const [contextPos, setContextPos] = React.useState<{ x: number; y: number } | null>(null);
+  const [isHovered, setIsHovered] = React.useState(false);
   const Icon = typeIcon(item.type);
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -115,7 +117,8 @@ function HistoryRow({ item, selected, onSelect, onContextAction, privateMode }: 
     setContextPos(null);
   };
 
-  const preview = privateMode
+  const isRevealed = isHovered || selected;
+  const preview = privateMode && !isRevealed
     ? '•••••••••••••••••'
     : (item.preview.summary || item.textContent || item.filePath);
 
@@ -126,7 +129,10 @@ function HistoryRow({ item, selected, onSelect, onContextAction, privateMode }: 
         data-selected={selected}
         type="button"
         onClick={onSelect}
+        onDoubleClick={onDoubleClick}
         onContextMenu={handleContextMenu}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         aria-selected={selected}
         role="option"
         className={cn(
@@ -271,6 +277,10 @@ export function HistoryList({
                 item={item}
                 selected={item.id === selectedID}
                 onSelect={() => onSelect(item.id)}
+                onDoubleClick={() => {
+                  onSelect(item.id);
+                  void executeAction('copy_again');
+                }}
                 onContextAction={handleContextAction}
                 privateMode={privateMode}
               />

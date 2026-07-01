@@ -108,3 +108,30 @@ kbd,
 samp {
   font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', ui-monospace, monospace;
 }
+
+/* ─── Theme Overrides ────────────────────────────────────────────────────────── */
+
+:root {
+  /* Default typography scale */
+  --glyph-font-scale: 1;
+}
+
+html.glyph-large-text {
+  /* Boost root font-size from 16px to 18px (approx 12.5% increase) */
+  /* This scales all rem-based typography up globally */
+  font-size: 112.5%;
+}
+
+html.glyph-high-contrast {
+  /* Force all muted/dim text to be fully opaque */
+  --tw-text-opacity: 1 !important;
+}
+
+html.glyph-high-contrast .text-mist\/50,
+html.glyph-high-contrast .text-mist\/40,
+html.glyph-high-contrast .text-mist\/30,
+html.glyph-high-contrast .text-mist\/70,
+html.glyph-high-contrast .text-mist\/80,
+html.glyph-high-contrast .text-white\/50 {
+  color: theme('colors.mist') !important;
+}

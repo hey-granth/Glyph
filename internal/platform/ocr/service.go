@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/granthio/glyph/internal/config"
+	"github.com/hey-granth/Glyph/internal/config"
 )
 
 type Service struct {

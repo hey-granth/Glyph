@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/granthio/glyph/internal/config"
-	"github.com/granthio/glyph/internal/domain"
-	"github.com/granthio/glyph/internal/platform/clipboard"
-	"github.com/granthio/glyph/internal/platform/ocr"
-	"github.com/granthio/glyph/internal/platform/preview"
+	"github.com/hey-granth/Glyph/internal/config"
+	"github.com/hey-granth/Glyph/internal/domain"
+	"github.com/hey-granth/Glyph/internal/platform/clipboard"
+	"github.com/hey-granth/Glyph/internal/platform/ocr"
+	"github.com/hey-granth/Glyph/internal/platform/preview"
 )
 
 type Repository interface {

@@ -8,7 +8,9 @@ import { Input } from '../ui/input';
 import { Stepper } from '../ui/stepper';
 import { Dropdown } from '../ui/dropdown';
 import { ShortcutBadge } from '../ui/shortcut-badge';
+import { ShortcutCapture } from '../ui/shortcut-capture';
 import { cn } from '../../lib/utils';
+import { bridge } from '../../lib/bridge';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -220,11 +222,10 @@ export function SettingsSheet({ open, settings, onClose, onSave, onOpenShortcuts
                   label="Global Shortcut"
                   description="Shortcut to open Glyph from anywhere"
                   control={
-                    <Input
+                    <ShortcutCapture
                       value={settings.globalShortcut}
-                      onChange={(e) => void onSave({ ...settings, globalShortcut: e.target.value })}
+                      onChange={(v) => void onSave({ ...settings, globalShortcut: v })}
                       className="w-[200px] font-mono text-[12px]"
-                      placeholder="e.g. Ctrl+Shift+Space"
                     />
                   }
                 />
@@ -323,7 +324,17 @@ export function SettingsSheet({ open, settings, onClose, onSave, onOpenShortcuts
                       value={settings.storageDirectory || '~/.glyph'}
                       className="flex-1 cursor-default font-mono text-[12px] text-mist/60 bg-white/[0.03]"
                     />
-                    <Button variant="secondary" size="sm" className="shrink-0">
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      className="shrink-0"
+                      onClick={async () => {
+                        const path = await bridge.openDirectoryDialog();
+                        if (path) {
+                          void onSave({ ...settings, storageDirectory: path });
+                        }
+                      }}
+                    >
                       <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
                       Browse
                     </Button>

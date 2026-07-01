@@ -32,6 +32,9 @@ func migrate(db *sql.DB) error {
 	PRAGMA journal_mode = WAL;
 	PRAGMA synchronous = NORMAL;
 	PRAGMA foreign_keys = ON;
+	PRAGMA temp_store = MEMORY;
+	PRAGMA mmap_size = 268435456;
+	PRAGMA cache_size = -20000;
 
 	CREATE TABLE IF NOT EXISTS items (
 		id TEXT PRIMARY KEY,
